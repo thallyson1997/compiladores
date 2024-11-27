@@ -10,8 +10,14 @@ public class Main {
       
             """;
         Scanner scan = new Scanner (input.getBytes());
-        for (Token tk = scan.nextToken(); tk.type != TokenType.EOF; tk = scan.nextToken()) {
-            System.out.println(tk);
-        }
+           ```java
+	
+ System.out.println("<tokens>");        
+ for (Token tk = scan.nextToken(); tk.type != EOF; tk = scan.nextToken()) {
+         System.out.println(tk);
+ }
+ System.out.println("</tokens>");
+```
+           
     }
 }
