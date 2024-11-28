@@ -208,6 +208,9 @@ public class Scanner {
             case ';':
                 advance();
                 return new Token(TokenType.SEMICOLON, ";", line);
+            case '=':
+                advance();
+                return new Token(TokenType.EQ, "=", line);
             default:
                 throw new Error("lexical error at '" + ch + "'");
         }
