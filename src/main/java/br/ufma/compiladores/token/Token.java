@@ -1,7 +1,7 @@
+package src.main.java.br.ufma.compiladores.token;
 public class Token {
-
-    final TokenType type;
-    final String lexeme;
+    public final TokenType type;
+    public final String lexeme;
     final int line;
 
     public Token(TokenType type, String lexeme, int line) {
@@ -12,11 +12,10 @@ public class Token {
 
     public String toString() {
         String categoria = type.toString().toLowerCase();
-
         String valor = lexeme;
-        if (isSymbol(lexeme)) {
+
+        if (TokenType.isSymbol(lexeme.charAt(0))) {
             categoria = "symbol";
-            // Os símbolos <, >, ", e & são impressos como &lt;, &gt;, &quot;, e &amp; para não conflitar com o significado no XML
             if (valor.equals(">")) {
                 valor = "&gt;";
             } else if (valor.equals("<")) {
@@ -26,7 +25,6 @@ public class Token {
             } else if (valor.equals("&")) {
                 valor = "&amp;";
             }
-
         } else if (categoria.equals("number")) {
             categoria = "integerConstant";
         } else if (categoria.equals("ident")) {
@@ -36,10 +34,7 @@ public class Token {
         } else {
             categoria = "keyword";
         }
-        return "<" + categoria + "> " + valor + " </" + categoria + ">";
-    }
 
-    private boolean isSymbol(String lexeme) {
-        return lexeme.matches("[\\{\\}\\(\\)\\[\\];\\.,\\+\\-\\*/<>=&|!]");
+        return "<" + categoria + "> " + valor + " </" + categoria + ">";
     }
 }

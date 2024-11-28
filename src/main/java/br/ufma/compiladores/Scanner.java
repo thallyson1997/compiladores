@@ -1,8 +1,22 @@
+package src.main.java.br.ufma.compiladores;
+
+import src.main.java.br.ufma.compiladores.token.TokenType.*;
+
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import src.main.java.br.ufma.compiladores.token.Token;
+import src.main.java.br.ufma.compiladores.token.TokenType;
 public class Scanner {
+
+    private byte[] input;
+    private int current;
+    private int start;
+
+    private int line = 1;
+
     private static final Map<String, TokenType> keywords;
 
     static {
@@ -18,6 +32,7 @@ public class Scanner {
         keywords.put("var", TokenType.VAR);
         keywords.put("char", TokenType.CHAR);
         keywords.put("boolean", TokenType.BOOLEAN);
+        keywords.put("string", TokenType.STRING);
         keywords.put("void", TokenType.VOID);
         keywords.put("true", TokenType.TRUE);
         keywords.put("false", TokenType.FALSE);
@@ -30,59 +45,12 @@ public class Scanner {
         keywords.put("return", TokenType.RETURN);
     }
 
-    private byte[] input;
-    private int current;
-    private int line = 1;
-    
-
     public Scanner(byte[] input) {
         this.input = input;
+        current = 0;
+        start = 0;
     }
 
-    private char peek() {
-        if (current < input.length)
-            return (char) input[current];
-        return '\0';
-    }
-
-    private void advance() {
-        char ch = peek();
-        if (ch != '\0') {
-            current++;
-        }
-    }
-
-    private boolean isAlpha(char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
-    }
-
-    private boolean isAlphaNumeric(char c) {
-        return isAlpha(c) || Character.isDigit(c);
-    }
-
-    private Token number() {
-        int start = current;
-        while (Character.isDigit(peek())) {
-            advance();
-        }
-
-        String n = new String(input, start, current - start);
-        return new Token(TokenType.NUMBER, n, line);
-    }
-
-    private Token string () {
-        advance();
-        int start = current;
-        while (peek() != '"' && peek() != 0) {
-            advance();
-        }
-        String s = new String(input, start, current-start, StandardCharsets.UTF_8);
-        Token token = new Token (TokenType.STRING,s,line);
-        advance();
-        return token;
-    }
-
-    
     private void skipBlockComments() {
         boolean endComment = false;
         advance();
@@ -92,18 +60,21 @@ public class Scanner {
             char ch = peek();
 
             if (ch == '\n')
-            line++;
+                line++;
+
             if (ch == 0) { // eof, lexical error
                 System.exit(1);
             }
+
             if (ch == '*') {
                 for (ch = peek(); ch == '*'; advance(), ch = peek())
-                ;
+                    ;
                 if (ch == '/') {
                     endComment = true;
                     advance();
                 }
             }
+
         }
     }
 
@@ -126,46 +97,24 @@ public class Scanner {
         }
     }
 
-    private char peekNext () {
-        int next = current + 1;
-        if ( next  < input.length) {
-            return (char)input[next];
-        } else {
-            return 0;
-        }
-   }
-    
-    private Token identifier() {
-        int start = current;
-        while (isAlphaNumeric(peek())) advance();
-
-        String id = new String(input, start, current - start);
-        TokenType type = keywords.get(id);
-        if (type == null) type = TokenType.IDENT;
-        return new Token(type, id, line);
-    }
-
     public Token nextToken() {
+
         skipWhitespace();
 
-
-        if (current >= input.length) {
-            return new Token(TokenType.EOF, "", line);
-        }
-
+        start = current;
         char ch = peek();
-
-        if (isAlpha(ch)) {
-            return identifier();
-        }
 
         if (Character.isDigit(ch)) {
             return number();
         }
 
+        if (isAlpha(ch)) {
+            return identifier();
+        }
+
         switch (ch) {
             case '"':
-                   return string();
+                return string();
             case '/':
                 if (peekNext() == '/') {
                     skipLineComments();
@@ -173,10 +122,9 @@ public class Scanner {
                 } else if (peekNext() == '*') {
                     skipBlockComments();
                     return nextToken();
-                }
-                else {
+                } else {
                     advance();
-                    return new Token (TokenType.SLASH,"/", line);
+                    return new Token(TokenType.SLASH, "/", line);
                 }
             case '+':
                 advance();
@@ -187,12 +135,27 @@ public class Scanner {
             case '*':
                 advance();
                 return new Token(TokenType.ASTERISK, "*", line);
+            case '.':
+                advance();
+                return new Token(TokenType.DOT, ".", line);
+            case '&':
+                advance();
+                return new Token(TokenType.AND, "&", line);
+            case '|':
+                advance();
+                return new Token(TokenType.OR, "|", line);
+            case '~':
+                advance();
+                return new Token(TokenType.NOT, "~", line);
+            case '>':
+                advance();
+                return new Token(TokenType.GT, ">", line);
             case '<':
                 advance();
                 return new Token(TokenType.LT, "<", line);
-            case ',':
+            case '=':
                 advance();
-                return new Token(TokenType.COMMA, ",", line);
+                return new Token(TokenType.EQ, "=", line);
             case '(':
                 advance();
                 return new Token(TokenType.LPAREN, "(", line);
@@ -205,22 +168,85 @@ public class Scanner {
             case '}':
                 advance();
                 return new Token(TokenType.RBRACE, "}", line);
+            case '[':
+                advance();
+                return new Token(TokenType.LBRACKET, "[", line);
+            case ']':
+                advance();
+                return new Token(TokenType.RBRACKET, "]", line);
             case ';':
                 advance();
                 return new Token(TokenType.SEMICOLON, ";", line);
-            case '=':
+            case ',':
                 advance();
-                return new Token(TokenType.EQ, "=", line);
+                return new Token(TokenType.COMMA, ",", line);
             default:
-                throw new Error("lexical error at '" + ch + "'");
+                advance();
+        }
+        return new Token(TokenType.EOF, "", line);
+    }
+
+    private Token identifier() {
+        while (isAlphaNumeric(peek()))
+            advance();
+
+        String id = new String(input, start, current - start, StandardCharsets.UTF_8);
+        TokenType type = keywords.get(id);
+        if (type == null)
+            type = TokenType.IDENT;
+        return new Token(type, id, line);
+    }
+
+    private Token number() {
+        while (Character.isDigit(peek())) {
+            advance();
+        }
+
+        String num = new String(input, start, current - start, StandardCharsets.UTF_8);
+        return new Token(TokenType.NUMBER, num, line);
+    }
+
+    private Token string() {
+        advance();
+        start = current;
+        while (peek() != '"' && peek() != 0) {
+            advance();
+        }
+        String s = new String(input, start, current - start, StandardCharsets.UTF_8);
+        Token token = new Token(TokenType.STRING, s, line);
+        advance();
+        return token;
+    }
+
+    private void advance() {
+        char ch = peek();
+        if (ch != 0) {
+            current++;
         }
     }
 
-    private void skipWhitespace() {
-        char ch = peek();
-        while (ch == ' ' || ch == '\r' || ch == '\t' || ch == '\n') {
-            advance();
-            ch = peek();
+    private boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                c == '_';
+    }
+
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || Character.isDigit((c));
+    }
+
+    private char peek() {
+        if (current < input.length)
+            return (char) input[current];
+        return 0;
+    }
+
+    private char peekNext() {
+        int next = current + 1;
+        if (next < input.length) {
+            return (char) input[next];
+        } else {
+            return 0;
         }
     }
 }
