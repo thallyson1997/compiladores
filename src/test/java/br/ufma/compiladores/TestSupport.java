@@ -1,4 +1,4 @@
-package src.test.java.br.ufma.compiladores;
+package br.ufma.compiladores;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -1,4 +1,4 @@
-package src.main.java.br.ufma.compiladores.token;
+package br.ufma.compiladores.token;
 public class Token {
     public final TokenType type;
     public final String lexeme;
