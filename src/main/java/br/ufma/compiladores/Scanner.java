@@ -1,14 +1,14 @@
-package src.main.java.br.ufma.compiladores;
+package br.ufma.compiladores;
 
-import src.main.java.br.ufma.compiladores.token.TokenType.*;
+import br.ufma.compiladores.token.TokenType.*;
 
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import src.main.java.br.ufma.compiladores.token.Token;
-import src.main.java.br.ufma.compiladores.token.TokenType;
+import br.ufma.compiladores.token.Token;
+import br.ufma.compiladores.token.TokenType;
 public class Scanner {
 
     private byte[] input;

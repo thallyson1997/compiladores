@@ -1,4 +1,4 @@
-package src.test.java.br.ufma.compiladores;
+package br.ufma.compiladores;
 
 import static org.junit.Assert.assertEquals;
 
@@ -7,9 +7,9 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
-import src.main.java.br.ufma.compiladores.Scanner;
-import src.main.java.br.ufma.compiladores.token.Token;
-import src.main.java.br.ufma.compiladores.token.TokenType;
+import br.ufma.compiladores.Scanner;
+import br.ufma.compiladores.token.Token;
+import br.ufma.compiladores.token.TokenType;
 
 public class ScannerTest extends TestSupport {
 

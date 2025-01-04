@@ -1,4 +1,4 @@
-package src.main.java.br.ufma.compiladores.token;
+package br.ufma.compiladores.token;
 import java.util.List;
 
 public enum TokenType {

@@ -1,9 +1,9 @@
-package src.main.java.br.ufma.compiladores;
+package br.ufma.compiladores;
 
-import static src.main.java.br.ufma.compiladores.token.TokenType.*;
+import static br.ufma.compiladores.token.TokenType.*;
 
-import src.main.java.br.ufma.compiladores.token.Token;
-import src.main.java.br.ufma.compiladores.token.TokenType;
+import br.ufma.compiladores.token.Token;
+import br.ufma.compiladores.token.TokenType;
 
 public class Parser {
     private Scanner scan;

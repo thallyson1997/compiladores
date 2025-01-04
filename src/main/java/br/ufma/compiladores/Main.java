@@ -1,6 +1,6 @@
-package src.main.java.br.ufma.compiladores;
-import src.main.java.br.ufma.compiladores.token.Token;
-import src.main.java.br.ufma.compiladores.token.TokenType;
+package br.ufma.compiladores;
+import br.ufma.compiladores.token.Token;
+import br.ufma.compiladores.token.TokenType;
 
 public class Main {
     public static void main(String[] args) {
