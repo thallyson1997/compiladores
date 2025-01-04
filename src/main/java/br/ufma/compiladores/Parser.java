@@ -2,6 +2,7 @@ package br.ufma.compiladores;
 
 import static br.ufma.compiladores.token.TokenType.*;
 
+import br.ufma.compiladores.VMWriter.Command;
 import br.ufma.compiladores.token.Token;
 import br.ufma.compiladores.token.TokenType;
 
@@ -10,6 +11,9 @@ public class Parser {
     private Token currentToken;
     private Token peekToken;
     private StringBuilder xmlOutput = new StringBuilder();
+    private VMWriter vmWriter = new VMWriter();
+    private int ifLabelNum = 0 ;
+    private int whileLabelNum = 0;
 
     public Parser(byte[] input) {
         scan = new Scanner(input);
@@ -20,6 +24,8 @@ public class Parser {
         currentToken = peekToken;
         peekToken = scan.nextToken();
     }
+
+    
 
     void parse() {
         parseClass();
@@ -102,6 +108,8 @@ public class Parser {
 
     void parseSubroutineDec() {
         printNonTerminal("subroutineDec");
+        ifLabelNum = 0;
+        whileLabelNum = 0;
         expectPeek(CONSTRUCTOR, FUNCTION, METHOD);
         // 'int' | 'char' | 'boolean' | className
         expectPeek(VOID, INT, CHAR, BOOLEAN, IDENT);
@@ -158,25 +166,67 @@ public class Parser {
     // 'while' '(' expression ')' '{' statements '}'
     void parseWhile() {
         printNonTerminal("whileStatement");
+
+        var labelTrue = "WHILE_EXP" + whileLabelNum;
+        var labelFalse = "WHILE_END" + whileLabelNum;
+        whileLabelNum++;
+
+        vmWriter.writeLabel(labelTrue);
+
         expectPeek(WHILE);
         expectPeek(LPAREN);
         parseExpression();
+
+        vmWriter.writeArithmetic(Command.NOT);
+        vmWriter.writeIf(labelFalse);
+
         expectPeek(RPAREN);
         expectPeek(LBRACE);
         parseStatements();
+
+        vmWriter.writeGoto(labelTrue); // Go back to labelTrue and check condition
+        vmWriter.writeLabel(labelFalse); // Breaks out of while loop because ~(condition) is true
+
         expectPeek(RBRACE);
         printNonTerminal("/whileStatement");
     }
-
+    
     void parseIf() {
         printNonTerminal("ifStatement");
+
+        var labelTrue = "IF_TRUE" + ifLabelNum;
+        var labelFalse = "IF_FALSE" + ifLabelNum;
+        var labelEnd = "IF_END" + ifLabelNum;
+
+        ifLabelNum++;
+    
         expectPeek(IF);
         expectPeek(LPAREN);
         parseExpression();
         expectPeek(RPAREN);
+
+        vmWriter.writeIf(labelTrue);
+        vmWriter.writeGoto(labelFalse);
+        vmWriter.writeLabel(labelTrue);
+    
         expectPeek(LBRACE);
         parseStatements();
         expectPeek(RBRACE);
+        if (peekTokenIs(ELSE)){
+            vmWriter.writeGoto(labelEnd);
+        }
+
+        vmWriter.writeLabel(labelFalse);
+
+        if (peekTokenIs(ELSE))
+        {
+            expectPeek(ELSE);
+            expectPeek(LBRACE)
+            parseStatements();
+            expectPeek(RBRACE);
+            vmWriter.writeLabel(labelEnd);
+        }
+
         printNonTerminal("/ifStatement");
     }
 
@@ -220,8 +270,12 @@ public class Parser {
         expectPeek(RETURN);
         if (!peekTokenIs(SEMICOLON)) {
             parseExpression();
+        } else {
+            vmWriter.writePush(Segment.CONST, 0);
         }
         expectPeek(SEMICOLON);
+        vmWriter.writeReturn();
+
         printNonTerminal("/returnStatement");
     }
 
@@ -244,10 +298,41 @@ public class Parser {
         printNonTerminal("expression");
         parseTerm();
         while (isOperator(peekToken.type)) {
+            var ope = peekToken.type;
             expectPeek(peekToken.type);
             parseTerm();
+            compileOperators(ope);
         }
         printNonTerminal("/expression");
+    }
+
+    public void compileOperators(TokenType type) {
+
+        if (type == ASTERISK) {
+            vmWriter.writeCall("Math.multiply", 2);
+        } else if (type == SLASH) {
+            vmWriter.writeCall("Math.divide", 2);
+        } else {
+            vmWriter.writeArithmetic(typeOperator(type));
+        }
+    }
+
+    private Command typeOperator(TokenType type) {
+        if (type == PLUS)
+            return Command.ADD;
+        if (type == MINUS)
+            return Command.SUB;
+        if (type == LT)
+            return Command.LT;
+        if (type == GT)
+            return Command.GT;
+        if (type == EQ)
+            return Command.EQ;
+        if (type == AND)
+            return Command.AND;
+        if (type == OR)
+            return Command.OR;
+        return null;
     }
 
     // term -> number | identifier | stringConstant | keywordConstant
@@ -255,16 +340,30 @@ public class Parser {
         printNonTerminal("term");
         switch (peekToken.type) {
             case NUMBER:
-                expectPeek(NUMBER);
+                expectPeek(TokenType.NUMBER);
+                vmWriter.writePush(Segment.CONST, Integer.parseInt(currentToken.lexeme));
                 break;
             case STRING:
-                expectPeek(STRING);
+                expectPeek(TokenType.STRING);
+                var strValue = currentToken.lexeme;
+                vmWriter.writePush(Segment.CONST, strValue.length());
+                vmWriter.writeCall("String.new", 1);
+                for (int i = 0; i < strValue.length(); i++) {
+                    vmWriter.writePush(Segment.CONST, strValue.charAt(i));
+                    vmWriter.writeCall("String.appendChar", 2);
+                }
                 break;
             case FALSE:
             case NULL:
             case TRUE:
+                expectPeek(FALSE, NULL, TRUE);
+                vmWriter.writePush(Segment.CONST, 0);
+                if (currentToken.type == TRUE)
+                    vmWriter.writeArithmetic(Command.NOT);
+                break;
             case THIS:
-                expectPeek(FALSE, NULL, TRUE, THIS);
+                expectPeek(THIS);
+                vmWriter.writePush(Segment.POINTER, 0);
                 break;
             case IDENT:
                 expectPeek(IDENT);
@@ -286,7 +385,13 @@ public class Parser {
             case MINUS:
             case NOT:
                 expectPeek(MINUS, NOT);
+                var op = currentToken.type;
                 parseTerm();
+                if (op == MINUS)
+                    vmWriter.writeArithmetic(Command.NEG);
+                else
+                    vmWriter.writeArithmetic(Command.NOT);
+        
                 break;
             default:
                 ;
@@ -297,6 +402,10 @@ public class Parser {
     // funções auxiliares
     public String XMLOutput() {
         return xmlOutput.toString();
+    }
+
+    public String VMOutput() {
+        return vmWriter.vmOutput();
     }
 
     private void printNonTerminal(String nterminal) {
