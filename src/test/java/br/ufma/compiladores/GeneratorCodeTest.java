@@ -1,10 +1,11 @@
 package br.ufma.compiladores;
+
+
 import static org.junit.Assert.assertEquals;
 
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
-
 
 public class GeneratorCodeTest {
 
@@ -832,4 +833,3 @@ public class GeneratorCodeTest {
    
     
 }
-

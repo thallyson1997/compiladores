@@ -49,6 +49,7 @@ public class Parser {
         printNonTerminal("class");
         expectPeek(CLASS);
         expectPeek(IDENT);
+        className = currentToken.lexeme; // Add this line to store the class name
         expectPeek(LBRACE);
         while (peekTokenIs(STATIC) || peekTokenIs(FIELD)) {
             parseClassVarDec();
@@ -112,17 +113,25 @@ public class Parser {
     void parseVarDec() {
         printNonTerminal("varDec");
         expectPeek(VAR);
-        // 'int' | 'char' | 'boolean' | className
+        
+        // Salvar o tipo
+        var type = peekToken.lexeme;
         expectPeek(INT, CHAR, BOOLEAN, IDENT);
+        
+        // Declarar a primeira variável
         expectPeek(IDENT);
+        symTable.define(currentToken.lexeme, type, Kind.VAR);
+        
+        // Declarar variáveis adicionais se houver
         while (peekTokenIs(COMMA)) {
             expectPeek(COMMA);
             expectPeek(IDENT);
+            symTable.define(currentToken.lexeme, type, Kind.VAR);
         }
+        
         expectPeek(SEMICOLON);
         printNonTerminal("/varDec");
     }
-
     // classVarDec → ( 'static' | 'field' ) type varName ( ',' varName)* ';'
     void parseClassVarDec() {
         printNonTerminal("classVarDec");
@@ -211,21 +220,41 @@ public class Parser {
     }
 
     // letStatement -> 'let' identifier( '[' expression ']' )? '=' expression ';'
+ 
     void parseLet() {
         printNonTerminal("letStatement");
         expectPeek(LET);
         expectPeek(IDENT);
-        if (peekTokenIs(LBRACKET)) {
+        
+        var varName = currentToken.lexeme;
+        var symbol = symTable.resolve(varName);
+    
+        if (peekTokenIs(LBRACKET)) { // Array
             expectPeek(LBRACKET);
             parseExpression();
             expectPeek(RBRACKET);
+            
+            vmWriter.writePush(kind2Segment(symbol.kind()), symbol.index());
+            vmWriter.writeArithmetic(Command.ADD);
+            
+            expectPeek(EQ);
+            parseExpression();
+            
+            vmWriter.writePop(Segment.TEMP, 0);
+            vmWriter.writePop(Segment.POINTER, 1);
+            vmWriter.writePush(Segment.TEMP, 0);
+            vmWriter.writePop(Segment.THAT, 0);
+        } else { // Variável simples
+            expectPeek(EQ);
+            parseExpression();
+            if (symbol != null) {
+                vmWriter.writePop(kind2Segment(symbol.kind()), symbol.index());
+            }
         }
-        expectPeek(EQ);
-        parseExpression();
+        
         expectPeek(SEMICOLON);
         printNonTerminal("/letStatement");
     }
-
     // 'while' '(' expression ')' '{' statements '}'
     void parseWhile() {
         printNonTerminal("whileStatement");
@@ -441,6 +470,11 @@ public class Parser {
                 if (peekTokenIs(LPAREN) || peekTokenIs(DOT)) {
                     parseSubroutineCall();
                 } else { // variavel comum ou array
+                    var symbol = symTable.resolve(currentToken.lexeme);
+                    if (symbol != null) {
+                        vmWriter.writePush(kind2Segment(symbol.kind()), symbol.index());
+                    }
+                    
                     if (peekTokenIs(LBRACKET)) { // array
                         expectPeek(LBRACKET);
                         parseExpression();

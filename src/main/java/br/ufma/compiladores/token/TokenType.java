@@ -26,7 +26,7 @@ public enum TokenType {
     CHAR, BOOLEAN, VOID, TRUE, FALSE,
     NULL, THIS, LET, DO, IF, ELSE, RETURN,
 
-    ILLEGAL, EOF, PRINT;
+    ILLEGAL, EOF, PRINT, value;
 
     public static boolean isSymbol(char c) {
         String symbols = "{}()[].,;+-*/&|<>=~";

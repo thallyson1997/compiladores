@@ -37,4 +37,9 @@ public class Token {
 
         return "<" + categoria + "> " + valor + " </" + categoria + ">";
     }
+
+    public String value() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'value'");
+    }
 }
