@@ -1,45 +1,50 @@
 package br.ufma.compiladores.token;
 public class Token {
+
     public final TokenType type;
     public final String lexeme;
-    final int line;
+    public final int line;
 
-    public Token(TokenType type, String lexeme, int line) {
+    public Token (TokenType type, String lexeme, int line) {
         this.type = type;
         this.lexeme = lexeme;
         this.line = line;
     }
 
+    public String value () {
+        return type.value;
+    }
+
     public String toString() {
-        String categoria = type.toString().toLowerCase();
+        var type = this.type.toString();
         String valor = lexeme;
+        if (type.equals("NUMBER"))
+            type =  "integerConstant";
 
-        if (TokenType.isSymbol(lexeme.charAt(0))) {
-            categoria = "symbol";
+        if (type.equals("STRING"))
+            type =  "stringConstant";
+
+        if (type.equals("IDENT"))
+            type =  "identifier";
+
+        if (TokenType.isSymbol(lexeme.charAt(0)))
+            type = "symbol";
+
             if (valor.equals(">")) {
-                valor = "&gt;";
+                valor = "&gt;" ;
             } else if (valor.equals("<")) {
-                valor = "&lt;";
+                valor = "&lt;" ;
             } else if (valor.equals("\"")) {
-                valor = "&quot;";
+                valor = "&quot;" ;
             } else if (valor.equals("&")) {
-                valor = "&amp;";
+                valor = "&amp;" ;
             }
-        } else if (categoria.equals("number")) {
-            categoria = "integerConstant";
-        } else if (categoria.equals("ident")) {
-            categoria = "identifier";
-        } else if (categoria.equals("string")) {
-            categoria = "stringConstant";
-        } else {
-            categoria = "keyword";
-        }
 
-        return "<" + categoria + "> " + valor + " </" + categoria + ">";
-    }
+        if (TokenType.isKeyword(this.type) )
+            type = "keyword";
+    
 
-    public String value() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'value'");
+        return "<"+ type +"> " + valor + " </"+ type + ">";
     }
+    
 }

@@ -6,9 +6,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import br.ufma.compiladores.token.Token;
-import br.ufma.compiladores.token.TokenType;
-
 
 public class App 
 {
@@ -26,9 +23,11 @@ public class App
             outputStream.close();
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
+            System.err.println("File not found");
             e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
+            System.err.println("IOException");
             e.printStackTrace();
         }
     }
